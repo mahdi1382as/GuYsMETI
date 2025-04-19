@@ -1,48 +1,46 @@
-import asyncio
 import os
+import asyncio
 from pyrogram import Client, filters
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pytgcalls import PyTgCalls
+from pytgcalls.types.input_stream import InputStream, InputAudioStream
+from pytgcalls.types.stream import StreamType
 from yt_dlp import YoutubeDL
-from config import API_ID, API_HASH, BOT_TOKEN, SESSION_NAME
+from config import API_ID, API_HASH, BOT_TOKEN
 
-# ایجاد ربات
 app = Client("bot", api_id=487410, api_hash="6d96f6d419ad8bc4a5181745d9228331", bot_token="773349916:AAEhxMKH2yOH6oqu5OPLZ-M2LM9qnwvzFFI")
-# تنظیمات دانلود آهنگ با yt-dlp
+pytg = PyTgCalls(app)
+
 ydl_opts = {
-    'format': 'bestaudio/best', 
-    'postprocessors': [{
-        'key': 'FFmpegAudioConvertor',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'outtmpl': '/tmp/%(id)s.%(ext)s',
+    "format": "bestaudio/best",
+    "outtmpl": "downloads/%(title)s.%(ext)s",
 }
 
-# پخش موزیک با لینک
-async def play_music(chat_id, link):
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(link, download=False)
-        url = info['formats'][0]['url']
+@app.on_message(filters.audio & filters.group)
+async def handle_audio(client, message: Message):
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton("پخش در ویس‌چت", callback_data=f"play|{message.chat.id}|{message.audio.file_id}")]]
+    )
+    await message.reply_text("می‌خوای این آهنگ رو پخش کنم؟", reply_markup=keyboard)
 
-    # ارسال آهنگ به گروه
-    await app.send_audio(chat_id, url)
+@app.on_callback_query()
+async def callback_handler(client, callback_query):
+    data = callback_query.data.split("|")
+    if data[0] == "play":
+        chat_id = int(data[1])
+        file_id = data[2]
+        file_path = await app.download_media(file_id)
+        await pytg.join_group_call(
+            chat_id,
+            InputStream(InputAudioStream(file_path)),
+            stream_type=StreamType().local_stream,
+        )
+        await callback_query.answer("در حال پخش در ویس‌چت!", show_alert=True)
 
-# دستور ربات برای ارسال آهنگ
-@app.on_message(filters.command('play') & filters.group)
-async def play(client, message):
-    # بررسی لینک آهنگ ارسال شده
-    if message.reply_to_message and message.reply_to_message.text:
-        link = message.reply_to_message.text
-        if 'youtube.com' in link or 'youtu.be' in link:
-            await play_music(message.chat.id, link)
-            await message.reply("در حال پخش موزیک...")
-        else:
-            await message.reply("لطفاً لینک معتبر آهنگ ارسال کنید.")
-
-# شروع ربات
 async def main():
     await app.start()
-    await userbot.start()
-    print("ربات آماده است!")
+    await pytg.start()
+    print("ربات با موفقیت اجرا شد.")
     await asyncio.get_event_loop().run_forever()
 
 if __name__ == "__main__":
