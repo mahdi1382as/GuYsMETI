@@ -1,3 +1,2 @@
-pyrogram==2.0.19
-youtube-dl==2021.12.17
-ffmpeg-python==0.2.0
+pyrogram==2.0.106
+tgcrypto>=1.2.3 ; platform_system != "Windows"
