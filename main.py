@@ -3,9 +3,9 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import yt_dlp
 
 # مقادیر خود را در اینجا وارد کنید
-api_id = "API_ID"
-api_hash = "API_HASH"
-bot_token = "BOT_TOKEN"
+api_id = "487410"
+api_hash = "6d96f6d419ad8bc4a5181745d9228331"
+bot_token = "773349916:AAEhxMKH2yOH6oqu5OPLZ-M2LM9qnwvzFFI"
 
 # ساخت ربات
 app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
