@@ -1,18 +1,14 @@
+# استفاده از تصویر پایه پایتون
 FROM python:3.9-slim
 
-# تنظیمات برای به روزرسانی و نصب ابزارهای مورد نیاز
-RUN apt-get update && apt-get install -y python3-dev build-essential
-
-# کپی requirements.txt
-COPY requirements.txt .
-
-# نصب پکیج‌ها
-RUN pip install --no-cache-dir -r requirements.txt
-
-# کپی سایر فایل‌های پروژه
-COPY . /app
-
+# تنظیم دایرکتوری کاری
 WORKDIR /app
 
-# اجرای ربات
+# کپی فایل‌ها به کانتینر
+COPY . /app
+
+# نصب پکیج‌های مورد نیاز
+RUN pip install --no-cache-dir -r requirements.txt
+
+# اجرای برنامه
 CMD ["python", "main.py"]
