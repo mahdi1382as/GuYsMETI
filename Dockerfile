@@ -1,14 +1,18 @@
-# استفاده از پایتون 3.9
+# انتخاب تصویر پایه
 FROM python:3.9-slim
 
-# تنظیمات برای نصب پکیج‌ها
+# تنظیمات پوشه کاری
 WORKDIR /app
 
-# کپی کردن فایل‌ها به داکر
-COPY . /app
+# نصب وابستگی‌های سیستم
+RUN apt-get update && apt-get install -y ffmpeg
 
-# نصب پکیج‌های مورد نیاز
+# نصب پکیج‌های Python
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# دستور برای اجرای برنامه
+# کپی کردن تمام فایل‌ها به داخل داکر
+COPY . .
+
+# اجرای فایل main.py
 CMD ["python", "main.py"]
