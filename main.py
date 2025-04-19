@@ -1,11 +1,11 @@
 from pyrogram import Client, filters
-import config
+import os
 
 app = Client(
     "my_bot",
-    api_id=config.API_ID,
-    api_hash=config.API_HASH,
-    bot_token=config.BOT_TOKEN
+    api_id=int(os.environ.get("API_ID")),
+    api_hash=os.environ.get("API_HASH"),
+    bot_token=os.environ.get("BOT_TOKEN")
 )
 
 @app.on_message(filters.command("start"))
