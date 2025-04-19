@@ -43,17 +43,20 @@ REPO = """
 - License: AGPL-3.0-or-later
 """
 
+from pyrogram import Client
+import config
+
 if config.BOT_TOKEN:
     bot = Client(
-        "موزیک پلیر چخچخی",
-        api_id=int(os.environ.get("API_ID")),
-        api_hash=os.environ.get("API_HASH"),
-        bot_token=os.environ.get("BOT_TOKEN"),
+        "music-player-bot",
+        api_id=int(config.API_ID),
+        api_hash=config.API_HASH,
+        bot_token=config.BOT_TOKEN,
         in_memory=True
     )
     client = bot
 else:
-    client = app
+    client = app  # اگه بخوای بدون بات اجرا بشه مثلاً برای Userbot
 
 
 @client.on_message(filters.command("repo", config.PREFIXES) & ~filters.bot)
