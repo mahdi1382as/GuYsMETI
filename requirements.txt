@@ -1,4 +1,3 @@
-pyrogram
-pytgcalls==3.0.0
-yt-dlp
-TgCrypto
+pyrogram==2.0.19
+youtube-dl==2021.12.17
+ffmpeg-python==0.2.0
