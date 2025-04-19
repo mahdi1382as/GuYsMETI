@@ -1,11 +1,14 @@
+# استفاده از پایتون 3.9
 FROM python:3.9-slim
 
-# نصب پکیج‌های مورد نیاز
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# تنظیمات برای نصب پکیج‌ها
+WORKDIR /app
 
-# کپی کل پروژه
+# کپی کردن فایل‌ها به داکر
 COPY . /app
 
-WORKDIR /app
+# نصب پکیج‌های مورد نیاز
+RUN pip install --no-cache-dir -r requirements.txt
+
+# دستور برای اجرای برنامه
 CMD ["python", "main.py"]
