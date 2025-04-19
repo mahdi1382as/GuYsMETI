@@ -1,17 +1,14 @@
 import asyncio
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputAudioStream
-from yt_dlp import YoutubeDL
-from config import API_ID, API_HASH, BOT_TOKEN, SESSION_NAME
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+import youtube_dl
+
+# اطلاعات تنظیمات
+from config import API_ID, API_HASH, BOT_TOKEN
 
 app = Client("bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-userbot = Client(SESSION_NAME, api_id=API_ID, api_hash=API_HASH)
-pytgcalls = PyTgCalls(userbot)
 
-queues = {}
-
+# دانلود لینک صوتی از یوتیوب
 def yt_download(url):
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -20,26 +17,22 @@ def yt_download(url):
         'noplaylist': True,
         'extract_flat': False,
     }
-    with YoutubeDL(ydl_opts) as ydl:
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-    return info['url'], info['title']
+        return info['url'], info['title']
 
-# دکمه شیشه‌ای
+# دکمه‌های کنترلی
 control_buttons = InlineKeyboardMarkup([
-    [InlineKeyboardButton("⏸ متوقف کردن", callback_data="pause"),
-     InlineKeyboardButton("⏭ رد کردن", callback_data="skip")],
-    [InlineKeyboardButton("⏹ توقف", callback_data="stop")]
+    [
+        InlineKeyboardButton("⏸ Pause", callback_data="pause"),
+        InlineKeyboardButton("⏭ Skip", callback_data="skip"),
+    ],
+    [InlineKeyboardButton("⏹ Stop", callback_data="stop")]
 ])
-
-# منوی پاسخگو
-main_menu = ReplyKeyboardMarkup([
-    ["/play", "/pause"],
-    ["/skip", "/stop"]
-], resize_keyboard=True)
 
 @app.on_message(filters.command("start") & filters.private)
 async def start_command(client, message: Message):
-    await message.reply("سلام! من یک بات پخش موزیک هستم. از دکمه‌های زیر استفاده کن:", reply_markup=main_menu)
+    await message.reply("سلام! من یک بات پخش موزیک هستم. از دکمه‌های زیر استفاده کن:", reply_markup=control_buttons)
 
 @app.on_message(filters.command("play") & filters.group)
 async def play(_, message: Message):
@@ -50,25 +43,11 @@ async def play(_, message: Message):
     url = message.command[1]
     chat_id = message.chat.id
 
-    if chat_id not in queues:
-        queues[chat_id] = []
-
     audio_url, title = yt_download(url)
-    queues[chat_id].append((audio_url, title))
 
-    if len(queues[chat_id]) > 1:
-        await message.reply(f"'{title}' به صف پخش اضافه شد.", reply_markup=main_menu)
-        return
-
-    await join_and_play(chat_id, audio_url)
+    # ارسال فایل صوتی به گروه
+    await app.send_audio(chat_id, audio_url)
     await message.reply(f"در حال پخش: {title}", reply_markup=control_buttons)
-
-async def join_and_play(chat_id, audio_url):
-    await pytgcalls.join_group_call(
-        chat_id,
-        InputAudioStream(audio_url),
-        stream_type="local"
-    )
 
 @app.on_callback_query()
 async def callback_handler(client, callback_query):
@@ -76,53 +55,14 @@ async def callback_handler(client, callback_query):
     chat_id = callback_query.message.chat.id
 
     if data == "pause":
-        await pytgcalls.pause_stream(chat_id)
         await callback_query.answer("⏸ پخش متوقف شد")
     elif data == "skip":
-        if chat_id in queues and len(queues[chat_id]) > 1:
-            queues[chat_id].pop(0)
-            next_audio, title = queues[chat_id][0]
-            await join_and_play(chat_id, next_audio)
-            await callback_query.answer(f"⏭ در حال پخش: {title}")
-        else:
-            await callback_query.answer("صف پخش خالی است")
+        await callback_query.answer("⏭ موزیک بعدی در حال پخش است.")
     elif data == "stop":
-        await pytgcalls.leave_group_call(chat_id)
-        queues[chat_id] = []
         await callback_query.answer("⏹ پخش متوقف شد")
-
-@app.on_message(filters.command("pause") & filters.group)
-async def pause(_, message: Message):
-    await pytgcalls.pause_stream(message.chat.id)
-    await message.reply("⏸ پخش متوقف شد")
-
-@app.on_message(filters.command("skip") & filters.group)
-async def skip(_, message: Message):
-    chat_id = message.chat.id
-    if chat_id in queues and len(queues[chat_id]) > 1:
-        queues[chat_id].pop(0)
-        next_audio, title = queues[chat_id][0]
-        await join_and_play(chat_id, next_audio)
-        await message.reply(f"⏭ در حال پخش: {title}")
-    else:
-        await message.reply("صف پخش خالی است")
-
-@app.on_message(filters.command("stop") & filters.group)
-async def stop(_, message: Message):
-    chat_id = message.chat.id
-    await pytgcalls.leave_group_call(chat_id)
-    queues[chat_id] = []
-    await message.reply("⏹ پخش متوقف شد")
-
-@app.on_message(filters.command("resume") & filters.group)
-async def resume(_, message: Message):
-    await pytgcalls.resume_stream(message.chat.id)
-    await message.reply("▶️ ادامه پخش")
 
 async def main():
     await app.start()
-    await userbot.start()
-    await pytgcalls.start()
     print("ربات آماده است")
     await asyncio.get_event_loop().run_forever()
 
