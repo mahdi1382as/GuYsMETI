@@ -1,47 +1,56 @@
 import os
-import asyncio
 from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputStream, InputAudioStream
-from pytgcalls.types.stream import StreamType
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from yt_dlp import YoutubeDL
 from config import API_ID, API_HASH, BOT_TOKEN
 
-app = Client("bot", api_id=487410, api_hash="6d96f6d419ad8bc4a5181745d9228331", bot_token="773349916:AAEhxMKH2yOH6oqu5OPLZ-M2LM9qnwvzFFI")
-pytg = PyTgCalls(app)
+bot = Client("ytbot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-ydl_opts = {
-    "format": "bestaudio/best",
-    "outtmpl": "downloads/%(title)s.%(ext)s",
-}
+@bot.on_message(filters.private & filters.text)
+async def youtube_handler(client, message):
+    url = message.text.strip()
+    if "youtube.com" not in url and "youtu.be" not in url:
+        return await message.reply("لطفاً لینک یوتیوب بده.")
 
-@app.on_message(filters.audio & filters.group)
-async def handle_audio(client, message: Message):
-    keyboard = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("پخش در ویس‌چت", callback_data=f"play|{message.chat.id}|{message.audio.file_id}")]]
-    )
-    await message.reply_text("می‌خوای این آهنگ رو پخش کنم؟", reply_markup=keyboard)
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("دانلود MP3", callback_data=f"mp3|{url}"),
+            InlineKeyboardButton("دانلود MP4", callback_data=f"mp4|{url}")
+        ]
+    ])
+    await message.reply("می‌خوای به چه فرمتی دانلود کنم؟", reply_markup=keyboard)
 
-@app.on_callback_query()
-async def callback_handler(client, callback_query):
-    data = callback_query.data.split("|")
-    if data[0] == "play":
-        chat_id = int(data[1])
-        file_id = data[2]
-        file_path = await app.download_media(file_id)
-        await pytg.join_group_call(
-            chat_id,
-            InputStream(InputAudioStream(file_path)),
-            stream_type=StreamType().local_stream,
-        )
-        await callback_query.answer("در حال پخش در ویس‌چت!", show_alert=True)
+@bot.on_callback_query()
+async def button_handler(client, callback_query):
+    await callback_query.answer()
+    data = callback_query.data
+    format_type, url = data.split("|")
 
-async def main():
-    await app.start()
-    await pytg.start()
-    print("ربات با موفقیت اجرا شد.")
-    await asyncio.get_event_loop().run_forever()
+    if format_type == "mp3":
+        opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': 'downloads/%(title)s.%(ext)s',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }]
+        }
+    else:
+        opts = {
+            'format': 'best[ext=mp4]',
+            'outtmpl': 'downloads/%(title)s.%(ext)s'
+        }
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    await callback_query.message.reply("در حال دانلود...")
+
+    with YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        file_path = ydl.prepare_filename(info)
+        if format_type == "mp3":
+            file_path = file_path.rsplit(".", 1)[0] + ".mp3"
+
+    await callback_query.message.reply_document(file_path)
+    os.remove(file_path)
+
+bot.run()
