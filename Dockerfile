@@ -1,13 +1,18 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
+
+# تنظیمات برای به روزرسانی و نصب ابزارهای مورد نیاز
+RUN apt-get update && apt-get install -y python3-dev build-essential
+
+# کپی requirements.txt
+COPY requirements.txt .
+
+# نصب پکیج‌ها
+RUN pip install --no-cache-dir -r requirements.txt
+
+# کپی سایر فایل‌های پروژه
+COPY . /app
 
 WORKDIR /app
 
-# نصب پکیج‌ها
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# کپی کل پروژه
-COPY . .
-
-# اجرای فایل اصلی
-CMD ["python3", "main.py"]
+# اجرای ربات
+CMD ["python", "main.py"]
