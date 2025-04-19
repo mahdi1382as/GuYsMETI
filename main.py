@@ -5,7 +5,7 @@ from yt_dlp import YoutubeDL
 from config import API_ID, API_HASH, BOT_TOKEN, SESSION_NAME
 
 # ایجاد ربات
-app = Client("bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("bot", api_id=487410, api_hash=6d96f6d419ad8bc4a5181745d9228331, bot_token=773349916:AAEhxMKH2yOH6oqu5OPLZ-M2LM9qnwvzFFI)
 userbot = Client(SESSION_NAME, api_id=API_ID, api_hash=API_HASH)
 
 # تنظیمات دانلود آهنگ با yt-dlp
